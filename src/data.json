@@ -86,29 +86,5 @@
       "estatus": "en_camino",
       "fecha": "2026-05-06T20:05:00Z"
     }
-  ],
-  "usuarios": {
-    "roles": [
-      {
-        "id": "admin",
-        "nombre": "Administrador",
-        "permisos": ["ver_dashboard", "editar_menu", "gestionar_usuarios"]
-      },
-      {
-        "id": "cocinero",
-        "nombre": "Cocinero",
-        "permisos": ["ver_pedidos", "actualizar_estatus_preparacion"]
-      },
-      {
-        "id": "repartidor",
-        "nombre": "Repartidor",
-        "permisos": ["ver_itinerario", "actualizar_estatus_entrega"]
-      },
-      {
-        "id": "cliente",
-        "nombre": "Cliente",
-        "permisos": ["ver_menu", "crear_pedido", "ver_mis_pedidos"]
-      }
-    ]
-  }
+  ]
 }

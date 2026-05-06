@@ -1,0 +1,57 @@
+{
+  "ROLES_CONFIG": {
+    "ADMIN": {
+      "name": "Dueño del negocio",
+      "allowed_modules": [
+        "dashboard",
+        "finanzas",
+        "inventario",
+        "menu_editor",
+        "recursos_humanos"
+      ],
+      "permissions": {
+        "finanzas": ["read", "write"],
+        "inventario": ["read", "write", "delete"],
+        "menu_editor": ["read", "write", "delete"],
+        "usuarios": ["read", "write", "delete"]
+      }
+    },
+    "COCINA": {
+      "name": "Preparación de alimentos",
+      "allowed_modules": [
+        "dashboard",
+        "pedidos_kanban",
+        "stock_critico"
+      ],
+      "permissions": {
+        "pedidos_kanban": ["read", "write"],
+        "stock_critico": ["read", "write"]
+      }
+    },
+    "REPARTIDOR": {
+      "name": "Logística de entrega",
+      "allowed_modules": [
+        "dashboard",
+        "logistica",
+        "mapa_rutas"
+      ],
+      "permissions": {
+        "logistica": ["read", "write"],
+        "mapa_rutas": ["read"]
+      }
+    },
+    "CLIENTE": {
+      "name": "Usuario final",
+      "allowed_modules": [
+        "menu",
+        "carrito",
+        "seguimiento",
+        "historial"
+      ],
+      "permissions": {
+        "pedidos": ["read", "write"],
+        "perfil": ["read", "write"]
+      }
+    }
+  }
+}
