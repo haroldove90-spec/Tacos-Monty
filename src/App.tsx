@@ -27,11 +27,12 @@ import {
   DollarSign,
   AlertTriangle,
   LogOut,
-  ToggleLeft
+  ToggleLeft,
+  BarChart
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { 
-  BarChart, 
+  BarChart as RechartsBarChart, 
   Bar, 
   XAxis, 
   YAxis, 
@@ -51,7 +52,7 @@ const LOGO_URL = "https://cossma.com.mx/montytacos.jpeg";
 
 type Role = 'ADMIN' | 'COCINA' | 'REPARTIDOR' | 'CLIENTE';
 type AdminModule = 'ANALYTICS' | 'FINANCES' | 'INVENTORY' | 'STAFF' | 'MENU_EDITOR' | 'REPARTIDORES';
-type KitchenModule = 'PEDIDOS';
+type KitchenModule = 'PEDIDOS' | 'HISTORIAL';
 type ClientModule = 'MENU' | 'MIS_PEDIDOS' | 'MI_PERFIL';
 type DriverModule = 'PENDIENTES' | 'FINALIZADAS' | 'COMISIONES';
 
@@ -66,6 +67,13 @@ export default function App() {
   const [driverModule, setDriverModule] = useState<DriverModule>('PENDIENTES');
   const [showBanner, setShowBanner] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isInstallPromptOpen, setIsInstallPromptOpen] = useState(true);
+
+  // Simulated Admin States
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [staffType, setStaffType] = useState<'Empleado' | 'Repartidor'>('Empleado');
+  const [showSuppliersModal, setShowSuppliersModal] = useState(false);
 
   // Global Config
   const [commissionRate, setCommissionRate] = useState(15); // Percentage
@@ -196,7 +204,7 @@ export default function App() {
                 setCurrentRole(role.id as Role);
                 setView('DASHBOARD');
                 if (role.id === 'ADMIN') setAdminModule('ANALYTICS');
-                if (role.id === 'COCINA') setKitchenModule('KDS');
+                if (role.id === 'COCINA') setKitchenModule('PEDIDOS');
               }}
               className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:border-[#DF8B42]/30 transition-all group flex items-center gap-6 text-left relative overflow-hidden"
             >
@@ -289,6 +297,12 @@ export default function App() {
                 className={`p-4 rounded-2xl transition-all ${kitchenModule === 'PEDIDOS' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
               >
                 <ClipboardList size={26} />
+              </button>
+              <button 
+                onClick={() => setKitchenModule('HISTORIAL')}
+                className={`p-4 rounded-2xl transition-all ${kitchenModule === 'HISTORIAL' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+              >
+                <BarChart size={24} />
               </button>
             </>
           ) : currentRole === 'REPARTIDOR' ? (
@@ -458,7 +472,10 @@ export default function App() {
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-black uppercase tracking-tight">Finanzas del Negocio</h2>
-                <button className="bg-[#3F3B78] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-[#3F3B78]/90 transition-all shadow-lg shadow-indigo-100">
+                <button 
+                  onClick={() => setShowExpenseModal(true)}
+                  className="bg-[#3F3B78] text-white px-6 py-3 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-[#3F3B78]/90 transition-all shadow-lg shadow-indigo-100 active:scale-95"
+                >
                   <Plus size={16} /> REGISTRAR GASTO
                 </button>
               </div>
@@ -514,7 +531,12 @@ export default function App() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="flex justify-between items-center mb-2">
                 <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">Inventario Maestro</h2>
-                <button className="bg-[#DF8B42] text-white px-4 py-2 rounded-xl text-xs font-bold hover:shadow-lg transition-all">GESTIONAR PROVEEDORES</button>
+                <button 
+                  onClick={() => setShowSuppliersModal(true)}
+                  className="bg-[#DF8B42] text-white px-6 py-3 rounded-xl text-xs font-black hover:shadow-lg transition-all active:scale-95"
+                >
+                  GESTIONAR PROVEEDORES
+                </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {inventoryItems.map(item => (
@@ -541,12 +563,27 @@ export default function App() {
       case 'STAFF':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-black uppercase tracking-tight">Gestión de Personal</h2>
-              <button className="bg-[#3F3B78] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-100">
-                <Plus size={16} /> NUEVO EMPLEADO
-              </button>
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+              <div>
+                <h2 className="text-2xl font-black uppercase tracking-tight">Gestión de Personal</h2>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] mt-1">Nómina y Control de Equipo</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => { setStaffType('Empleado'); setShowStaffModal(true); }}
+                  className="bg-[#DF8B42] text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-100 hover:scale-105 active:scale-95 transition-all"
+                >
+                  Nuevo Empleado
+                </button>
+                <button 
+                  onClick={() => { setStaffType('Repartidor'); setShowStaffModal(true); }}
+                  className="bg-[#8F2A1E] text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-red-100 hover:scale-105 active:scale-95 transition-all"
+                >
+                  + Repartidor
+                </button>
+              </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {staffItems.map(person => (
                 <div key={person.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group">
@@ -847,6 +884,84 @@ export default function App() {
     );
   };
 
+  const renderKitchenHistory = () => {
+    const stats = [
+      { label: 'Hoy', count: 48, icon: <Clock className="text-amber-500" /> },
+      { label: 'Esta Semana', count: 324, icon: <TrendingUp className="text-emerald-500" /> },
+      { label: 'Este Mes', count: 1245, icon: <CheckCircle2 className="text-[#3F3B78]" /> },
+    ];
+
+    const historyItems = [
+      { id: '105', client: 'Roberto M.', total: '$345', items: '6x Tacos Discada, 2x Papas', time: '14:25', status: 'delivered' },
+      { id: '104', client: 'Ana G.', total: '$220', items: '4x Tacos Asada', time: '13:10', status: 'on_way' },
+      { id: '103', client: 'Carlos R.', total: '$125', items: '5x Vapor Surtidos', time: '12:45', status: 'ready' },
+      { id: '102', client: 'Maria L.', total: '$180', items: '2x Chicharrón San Juan', time: '11:30', status: 'preparing' },
+    ];
+
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Historial de Preparación</h2>
+            <p className="text-slate-400 font-medium">Resumen de pedidos procesados por el equipo de cocina.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{stat.label}</p>
+                <p className="text-3xl font-black text-slate-900">{stat.count}</p>
+                <p className="text-[10px] font-bold text-slate-300 mt-1 uppercase">Órdenes Finalizadas</p>
+              </div>
+              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
+                {stat.icon}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs">Últimas Preparaciones</h3>
+            <button className="text-[10px] font-black text-[#8F2A1E] uppercase tracking-widest hover:underline">Descargar Reporte</button>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {historyItems.map((item) => (
+              <div key={item.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/30 transition-colors">
+                <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-[#8F2A1E] font-black text-sm">
+                    #{item.id}
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 leading-none mb-1">{item.client}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[200px]">{item.items}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between sm:justify-end gap-8">
+                  <div className="text-right">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Listo a las</p>
+                    <p className="font-black text-slate-900 whitespace-nowrap">{item.time} hrs</p>
+                  </div>
+                  <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                    item.status === 'delivered' ? 'bg-emerald-100 text-emerald-600' : 
+                    item.status === 'on_way' ? 'bg-[#3F3B78]/10 text-[#3F3B78]' : 
+                    'bg-amber-100 text-amber-600'
+                  }`}>
+                    {item.status === 'delivered' ? 'Entregado' : 
+                     item.status === 'on_way' ? 'En Camino' : 
+                     item.status === 'ready' ? 'Listo' : 'En Cocina'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderCourierView = () => {
     switch (driverModule) {
       case 'PENDIENTES':
@@ -1010,6 +1125,103 @@ export default function App() {
     );
   };
 
+  const renderModals = () => {
+    return (
+      <>
+        {/* Expense Modal */}
+        <AnimatePresence>
+          {showExpenseModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowExpenseModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+              <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl relative z-10 overflow-hidden">
+                <div className="bg-[#8F2A1E] p-8 text-white">
+                  <h3 className="text-2xl font-black uppercase tracking-tight">Registrar Gasto</h3>
+                  <p className="opacity-70 text-sm">Control financiero diario</p>
+                </div>
+                <div className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Concepto del Gasto</label>
+                    <input className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold outline-none focus:border-[#F5DD9F] transition-all" placeholder="Ej. Verduras, Empaques, Gas..." />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Monto del Gasto ($)</label>
+                    <input type="number" className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold outline-none focus:border-[#F5DD9F] transition-all" placeholder="0.00" />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button onClick={() => setShowExpenseModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancelar</button>
+                    <button onClick={() => setShowExpenseModal(false)} className="flex-1 bg-[#8F2A1E] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-red-100">Guardar</button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Staff Modal */}
+        <AnimatePresence>
+          {showStaffModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowStaffModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+              <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl relative z-10 overflow-hidden">
+                <div className="bg-[#DF8B42] p-8 text-white">
+                  <h3 className="text-2xl font-black uppercase tracking-tight">Alta de {staffType}</h3>
+                  <p className="opacity-70 text-sm">Registro de nuevo personal</p>
+                </div>
+                <div className="p-8 space-y-6">
+                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nombre Completo</label>
+                    <input className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold outline-none" placeholder="Nombre..." />
+                  </div>
+                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-1">WhatsApp / Contacto</label>
+                    <input className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold outline-none" placeholder="55 0000 0000" />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button onClick={() => setShowStaffModal(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancelar</button>
+                    <button onClick={() => setShowStaffModal(false)} className="flex-1 bg-[#DF8B42] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-orange-100">Registrar</button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Suppliers Modal */}
+        <AnimatePresence>
+          {showSuppliersModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSuppliersModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden">
+                <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+                  <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Directorio de Proveedores</h3>
+                    <p className="opacity-70 text-sm italic">Gestión de cadena de suministro</p>
+                  </div>
+                  <button onClick={() => setShowSuppliersModal(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors"><X/></button>
+                </div>
+                <div className="p-8 max-h-[60vh] overflow-y-auto">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {[
+                        { name: 'Carnicería San Juan', focus: 'Carne y Embutidos', contact: '81 1234 5678' },
+                        { name: 'Tortillería El Maíz', focus: 'Tortillas y Masa', contact: '81 8765 4321' },
+                        { name: 'Verdulería Mercado', focus: 'Frutas y Verduras', contact: '81 4455 6677' },
+                        { name: 'Desechables Monterrey', focus: 'Empaques', contact: '81 3322 1100' },
+                      ].map((prov, i) => (
+                        <div key={i} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 hover:border-[#F5DD9F] transition-all group">
+                           <p className="font-black text-slate-900 mb-1 group-hover:text-[#8F2A1E] transition-colors">{prov.name}</p>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{prov.focus}</p>
+                           <button className="w-full bg-white text-[10px] font-black uppercase tracking-widest py-2 rounded-xl border border-slate-200">Contactar: {prov.contact}</button>
+                        </div>
+                      ))}
+                   </div>
+                   <button className="w-full mt-8 bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px]">Añadir Nuevo Proveedor</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  };
+
   const renderContent = () => {
     switch (currentRole) {
       case 'ADMIN':
@@ -1030,7 +1242,7 @@ export default function App() {
         return (
           <div className="space-y-8 pt-4 px-4 sm:px-0">
             {renderOrderMonitor()}
-            {renderKitchenOrders()}
+            {kitchenModule === 'PEDIDOS' ? renderKitchenOrders() : renderKitchenHistory()}
           </div>
         );
       case 'CLIENTE':
@@ -1167,6 +1379,43 @@ export default function App() {
     }
   };
 
+  const renderInstallPrompt = () => {
+    if (!isInstallPromptOpen) return null;
+    return (
+      <div className="fixed bottom-24 lg:bottom-10 left-6 right-6 lg:left-auto lg:right-10 z-[1000]">
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white p-6 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border-2 border-[#F5DD9F] flex items-center justify-between gap-6 max-w-md lg:w-[400px]"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-[#8F2A1E] rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg rotate-3">
+              <img src={LOGO_URL} alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h4 className="font-black text-slate-900 leading-none mb-1">Instalar Monty Tacos</h4>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Acceso rápido desde tu pantalla de inicio</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => setIsInstallPromptOpen(false)}
+              className="bg-[#8F2A1E] text-white px-4 py-2.5 rounded-xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all shadow-lg shadow-red-100"
+            >
+              Instalar
+            </button>
+            <button 
+              onClick={() => setIsInstallPromptOpen(false)}
+              className="text-slate-300 font-bold text-[8px] uppercase tracking-[0.2em]"
+            >
+              Cerrar
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
   if (view === 'HOME') return renderHome();
 
   return (
@@ -1183,6 +1432,7 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {renderRoleSidebar()}
+        {renderModals()}
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-y-auto pb-32 lg:pb-0">
@@ -1263,6 +1513,16 @@ export default function App() {
                   }`}
                 >
                   <ClipboardList size={22} />
+                </button>
+                <button
+                  onClick={() => setKitchenModule('HISTORIAL')}
+                  className={`p-3 rounded-xl transition-all ${
+                    kitchenModule === 'HISTORIAL' 
+                      ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
+                      : 'text-white/40'
+                  }`}
+                >
+                  <BarChart size={22} />
                 </button>
               </>
             ) : currentRole === 'REPARTIDOR' ? (
