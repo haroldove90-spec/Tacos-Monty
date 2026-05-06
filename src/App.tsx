@@ -350,139 +350,26 @@ export default function App() {
   const renderMobileNavigation = () => {
     return (
       <div className="lg:hidden">
-        {/* Mobile Header with Menu Toggle */}
+        {/* Mobile Header - Compact */}
         <header className="fixed top-0 left-0 right-0 h-16 bg-[#8F2A1E] border-b border-white/10 z-50 px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 -ml-2 text-white/80 hover:bg-white/10 rounded-xl transition-colors"
-            >
-              <Smartphone size={24} />
-            </button>
-            <div className="w-8 h-8 bg-white rounded-lg overflow-hidden flex-shrink-0">
+            <div className="w-9 h-9 bg-white rounded-xl overflow-hidden flex-shrink-0 border-2 border-white/20">
                <img src={LOGO_URL} alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-lg font-black tracking-tight text-white leading-none truncate max-w-[150px]">
-              Monty Tacos
-            </h1>
+            <div>
+              <h1 className="text-base font-black tracking-tight text-white leading-none">
+                Monty Tacos
+              </h1>
+              <p className="text-[7px] font-black text-white/50 uppercase tracking-[0.2em] mt-1">{currentRole}</p>
+            </div>
           </div>
           <button 
             onClick={() => setView('HOME')}
-            className="w-10 h-10 bg-[#F5DD9F] rounded-xl flex items-center justify-center text-[#8F2A1E] shadow-lg"
+            className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white hover:bg-white/20 transition-all"
           >
-            <Home size={20} />
+            <LogOut size={18} />
           </button>
         </header>
-
-        {/* Mobile Sidebar (Drawer) */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60]"
-              />
-              <motion.aside 
-                initial={{ x: '-100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '-100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 left-0 bottom-0 w-80 bg-white z-[70] p-8 shadow-2xl flex flex-col"
-              >
-                <div className="flex items-center justify-between mb-12">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-xl border border-slate-100 rotate-3">
-                       <img src={LOGO_URL} alt="Logo" className="w-full h-full object-cover" />
-                    </div>
-                    <span className="font-black text-2xl tracking-tighter text-slate-900 leading-none">Monty<br/>Tacos</span>
-                  </div>
-                  <button onClick={() => setIsMobileMenuOpen(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><X size={24} /></button>
-                </div>
-
-                <nav className="flex-1 space-y-2 overflow-y-auto">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                    {currentRole === 'ADMIN' ? 'Módulos Administrativos' : currentRole === 'COCINA' ? 'Módulos de Cocina' : 'Opciones'}
-                  </p>
-                  {currentRole === 'ADMIN' ? (
-                    <>
-                      {[
-                        { id: 'ANALYTICS', label: 'Estadísticas', icon: <TrendingUp size={20} /> },
-                        { id: 'FINANCES', label: 'Finanzas', icon: <DollarSign size={20} /> },
-                        { id: 'INVENTORY', label: 'Inventario', icon: <Package size={20} /> },
-                        { id: 'STAFF', label: 'Personal', icon: <Users size={20} /> },
-                        { id: 'MENU_EDITOR', label: 'Editor de Menú', icon: <Edit3 size={20} /> },
-                      ].map(mod => (
-                        <button
-                          key={mod.id}
-                          onClick={() => {
-                            setAdminModule(mod.id as AdminModule);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${adminModule === mod.id ? 'bg-[#8F2A1E] text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                          {mod.icon}
-                          {mod.label}
-                        </button>
-                      ))}
-                    </>
-                  ) : currentRole === 'COCINA' ? (
-                    <>
-                      {[
-                        { id: 'KDS', label: 'Monitor KDS', icon: <ClipboardList size={20} /> },
-                        { id: 'AVAILABILITY', label: 'Disponibilidad', icon: <ToggleLeft size={20} /> },
-                      ].map(mod => (
-                        <button
-                          key={mod.id}
-                          onClick={() => {
-                            setKitchenModule(mod.id as KitchenModule);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${kitchenModule === mod.id ? 'bg-[#8F2A1E] text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                          {mod.icon}
-                          {mod.label}
-                        </button>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                      <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Estado del Rol</p>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-white rounded-2xl shadow-sm text-red-600">
-                           {currentRole === 'COCINA' && <ChefHat size={24} />}
-                           {currentRole === 'REPARTIDOR' && <Truck size={24} />}
-                           {currentRole === 'CLIENTE' && <Utensils size={24} />}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900">{currentRole}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mt-1">Sesión Activa</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        Como {currentRole.toLowerCase()}, tienes acceso a las funciones específicas de tu área. Los módulos administrativos están reservados para dueños.
-                      </p>
-                    </div>
-                  )}
-                </nav>
-
-                <div className="pt-8 mt-auto border-t border-slate-100">
-                   <button 
-                    onClick={() => {
-                      setView('HOME');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
-                   >
-                     <LogOut size={20} /> Salir al Inicio
-                   </button>
-                </div>
-              </motion.aside>
-            </>
-          )}
-        </AnimatePresence>
       </div>
     );
   };
@@ -731,153 +618,89 @@ export default function App() {
   };
 
   const renderOrderMonitor = () => {
+    // Admin doesn't see the monitor anymore as requested
+    if (currentRole === 'ADMIN') return null;
+
     const statusConfig = {
-      pending: { label: '¡Nuevo Pedido!', sub: 'Tu pedido ha sido recibido 🌮', color: 'bg-amber-400', icon: <Bell className="animate-bounce" />, text: 'text-amber-600', glow: 'shadow-amber-200' },
-      preparing: { label: 'En Preparación', sub: 'Tu pedido está en preparación 🔥', color: 'bg-[#DF8B42]', icon: <ChefHat className="animate-pulse" />, text: 'text-[#DF8B42]', glow: 'shadow-orange-200' },
-      ready: { label: 'Listo para Entrega', sub: 'Tu pedido está listo para entrega ✅', color: 'bg-emerald-500', icon: <Package className="scale-110" />, text: 'text-emerald-600', glow: 'shadow-emerald-200' },
-      on_way: { label: 'En Camino', sub: 'Tu pedido está en camino 🛵', color: 'bg-[#3F3B78]', icon: <Truck className="translate-x-1 animate-pulse" />, text: 'text-[#3F3B78]', glow: 'shadow-indigo-200' },
-      delivered: { label: 'Entregado', sub: 'Tu pedido ha llegado 🎉', color: 'bg-slate-800', icon: <CheckCircle2 />, text: 'text-slate-900', glow: 'shadow-slate-200' },
+      pending: { label: 'Recibido', sub: 'Cola de espera', color: 'bg-amber-400', icon: <Bell size={14} />, text: 'text-amber-600' },
+      preparing: { label: 'Cocina', sub: 'Calentando plancha', color: 'bg-[#DF8B42]', icon: <ChefHat size={14} />, text: 'text-[#DF8B42]' },
+      ready: { label: 'Listo', sub: 'En mostrador', color: 'bg-emerald-500', icon: <Package size={14} />, text: 'text-emerald-600' },
+      on_way: { label: 'Entrega', sub: 'En camino 🛵', color: 'bg-[#3F3B78]', icon: <Truck size={14} />, text: 'text-[#3F3B78]' },
+      delivered: { label: '¡Buen provecho!', sub: 'Entregado', color: 'bg-slate-800', icon: <CheckCircle2 size={14} />, text: 'text-slate-900' },
     };
 
-    return (
-      <div className="bg-white rounded-[4rem] border-4 border-[#F5DD9F]/30 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.12)] overflow-hidden mb-16 animate-in fade-in zoom-in-95 duration-1000">
-        <div className="bg-[#8F2A1E] p-10 text-white flex flex-col md:flex-row justify-between items-center gap-8 border-b border-white/10 relative overflow-hidden">
-          {/* Animated Background Element */}
-          <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 to-transparent blur-3xl opacity-20"></div>
-          </div>
+    // Filter logic based on privacy requirements
+    let filteredOrders = orders;
+    if (currentRole === 'CLIENTE') {
+      // Simulate "my order" - in a real app would be by userId. Here we show the most recent one.
+      filteredOrders = orders.slice(0, 1);
+    } else if (currentRole === 'REPARTIDOR') {
+      // Driver only sees assigned orders
+      filteredOrders = orders.filter(o => o.driverId === 'R01');
+    }
+    // Kitchen sees all orders
 
-          <div className="flex items-center gap-8 relative z-10">
-             <motion.div 
-               animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
-               transition={{ duration: 4, repeat: Infinity }}
-               className="w-24 h-24 bg-gradient-to-br from-white to-slate-50 rounded-[2.5rem] flex items-center justify-center text-[#8F2A1E] shadow-[0_20px_40px_-10px_rgba(255,255,255,0.5)] border-4 border-white"
-             >
-                <ShoppingBag size={44} className="drop-shadow-lg" />
-             </motion.div>
-             <div>
-                <h3 className="text-4xl font-black uppercase tracking-tighter italic leading-none mb-2 bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">Monitor Monty Tacos</h3>
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
-                    <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                  </div>
-                  <p className="text-[12px] font-black opacity-80 uppercase tracking-[0.5em] text-amber-100">Transmisión en Tiempo Real</p>
-                </div>
-             </div>
+    if (filteredOrders.length === 0 && currentRole !== 'COCINA') {
+      return (
+        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-slate-100 flex items-center justify-center gap-3 mb-8">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
+            <ShoppingBag size={14} />
           </div>
-
-          <div className="flex items-center gap-6 relative z-10 bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] border border-white/20 shadow-2xl">
-             <div className="flex -space-x-4">
-                {orders.slice(0, 4).map((o, i) => (
-                   <motion.div 
-                    key={o.id} 
-                    whileHover={{ scale: 1.2, zIndex: 50, rotate: i % 2 === 0 ? 5 : -5 }}
-                    className="w-12 h-12 rounded-full bg-white border-2 border-[#8F2A1E] flex items-center justify-center text-xs font-black text-[#8F2A1E] shadow-2xl cursor-help"
-                   >
-                      #{o.id.slice(-2)}
-                   </motion.div>
-                ))}
-                {orders.length > 4 && (
-                  <div className="w-12 h-12 rounded-full bg-[#F5DD9F] border-2 border-[#8F2A1E] flex items-center justify-center text-xs font-black text-[#8F2A1E] shadow-2xl">
-                    +{orders.length - 4}
-                  </div>
-                )}
-             </div>
-             <div className="h-10 w-[1px] bg-white/20"></div>
-             <div className="text-right">
-                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-0.5">Órdenes</p>
-                <p className="text-2xl font-black">{orders.length}</p>
-             </div>
-          </div>
+          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sin pedidos activos en el monitor</p>
         </div>
+      );
+    }
 
-        <div className="p-10 lg:p-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
-          {(Object.keys(statusConfig) as Array<keyof typeof statusConfig>).map((status) => {
-            const config = statusConfig[status];
-            const filteredOrders = orders.filter(o => o.status === status);
-            const isActive = filteredOrders.length > 0;
-            
-            return (
-              <div 
-                key={status} 
-                className={`flex flex-col items-center text-center p-10 rounded-[4rem] transition-all duration-700 relative group
-                  ${isActive 
-                    ? `bg-slate-50 border-2 border-[#F5DD9F] shadow-2xl ${config.glow}` 
-                    : 'bg-white border-2 border-slate-50 opacity-15 hover:opacity-30 grayscale'
-                  }`}
-              >
-                <div className={`w-24 h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl mb-8 relative z-10 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6
-                  ${config.color} ${isActive ? 'animate-in zoom-in duration-700' : ''}`}
-                >
-                   {config.icon}
-                   {isActive && (
-                     <motion.div 
-                       initial={{ scale: 0 }}
-                       animate={{ scale: 1 }}
-                       className="absolute -top-3 -right-3 w-10 h-10 bg-white text-[#8F2A1E] rounded-2xl flex items-center justify-center text-sm font-black shadow-2xl border-4 border-slate-50 rotate-12"
-                     >
-                        {filteredOrders.length}
-                     </motion.div>
-                   )}
-                </div>
-                
-                <h4 className={`text-base font-black uppercase tracking-tight leading-none mb-3 ${config.text}`}>
-                  {config.label}
-                </h4>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed min-h-[30px]">
-                  {config.sub}
-                </p>
-                
-                <div className="mt-10 w-full space-y-4">
-                  <AnimatePresence mode="popLayout">
-                    {filteredOrders.map(order => (
-                      <motion.div 
-                        layout
-                        initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.8, opacity: 0, transition: { duration: 0.3 } }}
-                        key={order.id}
-                        className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-xl flex flex-col items-center gap-2 relative overflow-hidden group/card hover:border-[#DF8B42] hover:shadow-orange-100/50 transition-all"
-                      >
-                        <div className="w-full flex justify-between items-center mb-2">
-                          <span className="text-xs font-black text-slate-900 bg-slate-50 px-3 py-1 rounded-full">#{order.id}</span>
-                          <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 group-hover/card:text-[#DF8B42] transition-colors">
-                            <Clock size={12} className="opacity-50" />
-                            <span>{order.time}</span>
-                          </div>
-                        </div>
-                        <p className="text-xs font-black text-[#8F2A1E] uppercase tracking-widest truncate w-full text-center px-2">{order.client}</p>
-                        
-                        {status === 'preparing' && (
-                          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-orange-400 to-transparent bg-[length:200%_100%] animate-gradient-x"></div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  
-                  {filteredOrders.length === 0 && (
-                    <div className="py-10 border-4 border-slate-50 border-dashed rounded-[3rem] flex flex-col items-center justify-center gap-3 opacity-40">
-                      <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-200">
-                        <ShoppingBag size={20} />
+    return (
+      <div className="mb-8 animate-in fade-in slide-in-from-top-2 duration-700">
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-[#8F2A1E] px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+              <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Estado de Pedidos en Vivo</p>
+            </div>
+            {currentRole === 'COCINA' && (
+              <span className="text-[9px] font-black bg-white/10 text-white px-3 py-1 rounded-full">{orders.length} TOTAL</span>
+            )}
+          </div>
+          
+          <div className="p-4 overflow-x-auto">
+            <div className="flex gap-4 min-w-max">
+              {(Object.keys(statusConfig) as Array<keyof typeof statusConfig>).map((status) => {
+                const config = statusConfig[status];
+                const statusOrders = (currentRole === 'COCINA' ? orders : filteredOrders).filter(o => o.status === status);
+                const hasOrders = statusOrders.length > 0;
+
+                if (!hasOrders && currentRole !== 'COCINA') return null;
+
+                return (
+                  <div key={status} className={`flex-1 min-w-[140px] p-3 rounded-2xl border transition-all ${hasOrders ? 'bg-slate-50 border-slate-100' : 'bg-white border-transparent opacity-20'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white ${config.color} shadow-lg`}>
+                        {config.icon}
                       </div>
-                      <span className="italic text-slate-300 text-[10px] font-black uppercase tracking-widest leading-none">Esperando</span>
+                      <div>
+                        <p className={`text-[10px] font-black uppercase leading-none ${config.text}`}>{config.label}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{config.sub}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                {isActive && (
-                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white px-6 py-2.5 rounded-full shadow-[0_15px_30px_-10px_rgba(0,0,0,0.2)] border border-slate-100 flex items-center gap-3 animate-bounce">
-                    <div className="relative">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                      <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+                    <div className="space-y-1.5">
+                      {statusOrders.map(o => (
+                        <motion.div 
+                          layout
+                          key={o.id}
+                          className="bg-white px-2 py-1.5 rounded-lg border border-slate-100 shadow-sm flex items-center justify-between"
+                        >
+                          <span className="text-[10px] font-black text-slate-900 leading-none">#{o.id}</span>
+                          <span className="text-[8px] font-bold text-slate-400">{o.time}</span>
+                        </motion.div>
+                      ))}
                     </div>
-                    <span className="text-[9px] font-black uppercase text-slate-900 tracking-[0.2em] whitespace-nowrap">Actualizado Live</span>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1403,26 +1226,26 @@ export default function App() {
         </main>
       </div>
 
-      {/* Improved Mobile Bottom Navigation */}
+      {/* Improved Mobile Bottom Navigation - Exclusive for Mobile */}
       <div className="flex lg:hidden fixed bottom-0 left-0 right-0 z-50">
         <footer className="bg-[#8F2A1E] border-t border-white/5 px-4 h-20 flex items-center justify-between w-full shadow-[0_-10px_50px_-20px_rgba(0,0,0,0.5)] pb-safe">
-          {/* Combined Module Shortcuts */}
-          <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-2xl flex-1 max-w-[280px]">
+          <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-2xl flex-1 justify-around">
             {currentRole === 'ADMIN' ? (
               <>
                 {[
-                  { id: 'ANALYTICS', icon: <TrendingUp size={20} /> },
-                  { id: 'FINANCES', icon: <DollarSign size={20} /> },
-                  { id: 'INVENTORY', icon: <Package size={20} /> },
-                  { id: 'REPARTIDORES', icon: <Truck size={20} /> },
+                  { id: 'ANALYTICS', icon: <TrendingUp size={22} /> },
+                  { id: 'FINANCES', icon: <DollarSign size={22} /> },
+                  { id: 'INVENTORY', icon: <Package size={22} /> },
+                  { id: 'REPARTIDORES', icon: <Truck size={22} /> },
+                  { id: 'STAFF', icon: <Users size={22} /> },
                 ].map((mod) => (
                   <button
                     key={mod.id}
                     onClick={() => setAdminModule(mod.id as AdminModule)}
-                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
+                    className={`p-3 rounded-xl transition-all ${
                       adminModule === mod.id 
                         ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
-                        : 'text-white/40 hover:text-white'
+                        : 'text-white/40'
                     }`}
                   >
                     {mod.icon}
@@ -1431,36 +1254,31 @@ export default function App() {
               </>
             ) : currentRole === 'COCINA' ? (
               <>
-                {[
-                  { id: 'PEDIDOS', icon: <ClipboardList size={20} />, label: 'Pedidos' },
-                ].map((mod) => (
-                  <button
-                    key={mod.id}
-                    onClick={() => setKitchenModule(mod.id as KitchenModule)}
-                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
-                      kitchenModule === mod.id 
-                        ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
-                        : 'text-white/40 hover:text-white'
-                    }`}
-                  >
-                    {mod.icon}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setKitchenModule('PEDIDOS')}
+                  className={`p-3 rounded-xl transition-all ${
+                    kitchenModule === 'PEDIDOS' 
+                      ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
+                      : 'text-white/40'
+                  }`}
+                >
+                  <ClipboardList size={22} />
+                </button>
               </>
             ) : currentRole === 'REPARTIDOR' ? (
               <>
                 {[
-                  { id: 'PENDIENTES', icon: <Package size={20} />, label: 'Entregas' },
-                  { id: 'FINALIZADAS', icon: <ClipboardList size={20} />, label: 'Historial' },
-                  { id: 'COMISIONES', icon: <DollarSign size={20} />, label: 'Dinero' },
+                  { id: 'PENDIENTES', icon: <Package size={22} /> },
+                  { id: 'FINALIZADAS', icon: <ClipboardList size={22} /> },
+                  { id: 'COMISIONES', icon: <DollarSign size={22} /> },
                 ].map((mod) => (
                   <button
                     key={mod.id}
                     onClick={() => setDriverModule(mod.id as DriverModule)}
-                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
+                    className={`p-3 rounded-xl transition-all ${
                       driverModule === mod.id 
                         ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
-                        : 'text-white/40 hover:text-white'
+                        : 'text-white/40'
                     }`}
                   >
                     {mod.icon}
@@ -1470,17 +1288,17 @@ export default function App() {
             ) : (
               <>
                 {[
-                  { id: 'MENU', icon: <Utensils size={20} />, label: 'Menú' },
-                  { id: 'MIS_PEDIDOS', icon: <ShoppingBag size={20} />, label: 'Pedidos' },
-                  { id: 'MI_PERFIL', icon: <User size={20} />, label: 'Perfil' },
+                  { id: 'MENU', icon: <Utensils size={22} /> },
+                  { id: 'MIS_PEDIDOS', icon: <ShoppingBag size={22} /> },
+                  { id: 'MI_PERFIL', icon: <User size={22} /> },
                 ].map((mod) => (
                   <button
                     key={mod.id}
                     onClick={() => setClientModule(mod.id as ClientModule)}
-                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
+                    className={`p-3 rounded-xl transition-all ${
                       clientModule === mod.id 
                         ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
-                        : 'text-white/40 hover:text-white'
+                        : 'text-white/40'
                     }`}
                   >
                     {mod.icon}
@@ -1489,34 +1307,12 @@ export default function App() {
               </>
             )}
           </div>
-
-          <div className="flex gap-4 sm:gap-6 pl-4 border-l border-white/10 ml-4">
-            <button 
-              onClick={() => {
-                if (currentRole === 'ADMIN') setAdminModule('ANALYTICS');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`${((currentRole === 'ADMIN' && adminModule === 'ANALYTICS') || currentRole === 'CLIENTE') ? 'text-[#F5DD9F]' : 'text-white/40'} flex flex-col items-center gap-0.5 group transition-all`}
-            >
-              <div className={`p-2 rounded-xl transition-all ${((currentRole === 'ADMIN' && adminModule === 'ANALYTICS') || currentRole === 'CLIENTE') ? 'bg-white/10' : 'group-hover:bg-white/5'}`}>
-                <Home size={22} />
-              </div>
-              <span className="text-[8px] font-black uppercase tracking-tighter">Inicio</span>
-            </button>
-            
-            <button 
-              onClick={() => {
-                setView('HOME');
-                setIsMobileMenuOpen(false);
-              }}
-              className="flex flex-col items-center gap-0.5 group text-white/40 hover:text-white transition-all underline decoration-transparent hover:decoration-[#F5DD9F]"
-            >
-              <div className="p-2 rounded-xl group-hover:bg-white/10 transition-all">
-                <LogOut size={22} />
-              </div>
-              <span className="text-[8px] font-black uppercase tracking-tighter">Salir</span>
-            </button>
-          </div>
+          <button 
+            onClick={() => setView('HOME')}
+            className="ml-4 p-3 bg-white/10 text-white/40 rounded-xl"
+          >
+            <Home size={22} />
+          </button>
         </footer>
       </div>
     </div>
