@@ -1,0 +1,6 @@
+{
+  "name": "Monty Tacos",
+  "description": "PWA para la gestión de pedidos y menú de la taquería Monty Tacos en Tlalnepantla.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

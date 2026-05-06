@@ -1,0 +1,114 @@
+{
+  "negocio": {
+    "nombre": "Monty Tacos",
+    "ubicacion": "Tlalnepantla de Baz, Estado de México",
+    "contacto": {
+      "telefono": "55-1234-5678",
+      "email": "hola@montytacos.mx",
+      "whatsapp": "+52 55 1234 5678"
+    },
+    "horario": "Lun - Dom: 18:00 - 01:00"
+  },
+  "menu": [
+    {
+      "id": "tacos-vapor",
+      "nombre": "Tacos a Vapor Maíz/Harina",
+      "descripcion": "Suaves y calientitos, el sabor tradicional.",
+      "precio": 25,
+      "categoria": "Especialidades"
+    },
+    {
+      "id": "jalapenos-philadelphia",
+      "nombre": "Jalapeños Philadelphia con Tocino",
+      "descripcion": "Rellenos de crema y envueltos en tocino crujiente.",
+      "precio": 45,
+      "categoria": "Entradas"
+    },
+    {
+      "id": "tacos-asada",
+      "nombre": "Tacos de Carne Asada",
+      "descripcion": "Res de primera calidad asada al carbón.",
+      "precio": 30,
+      "categoria": "Tacos"
+    },
+    {
+      "id": "tacos-alambre",
+      "nombre": "Tacos de Alambre",
+      "descripcion": "Mezcla de carne, pimiento, cebolla y queso.",
+      "precio": 35,
+      "categoria": "Tacos"
+    },
+    {
+      "id": "tacos-discada",
+      "nombre": "Tacos de Discada",
+      "descripcion": "Receta clásica del norte con carnes frías y res.",
+      "precio": 30,
+      "categoria": "Tacos"
+    },
+    {
+      "id": "tacos-chicharron",
+      "nombre": "Tacos Chicharrón San Juan",
+      "descripcion": "El famoso chicharrón prensado estilo San Juan.",
+      "precio": 30,
+      "categoria": "Tacos"
+    }
+  ],
+  "pedidos_activos": [
+    {
+      "id": "ORD-001",
+      "cliente": "Ricardo M.",
+      "items": [
+        { "producto": "Tacos al Pastor", "cantidad": 5 },
+        { "producto": "Agua de Horchata", "cantidad": 1 }
+      ],
+      "total": 120,
+      "estatus": "pendiente",
+      "fecha": "2026-05-06T19:30:00Z"
+    },
+    {
+      "id": "ORD-002",
+      "cliente": "Elena G.",
+      "items": [
+        { "producto": "Gringa de Pastor", "cantidad": 2 },
+        { "producto": "Volcán de Queso", "cantidad": 1 }
+      ],
+      "total": 125,
+      "estatus": "preparando",
+      "fecha": "2026-05-06T19:45:00Z"
+    },
+    {
+      "id": "ORD-003",
+      "cliente": "David S.",
+      "items": [
+        { "producto": "Taco de Bistec", "cantidad": 10 }
+      ],
+      "total": 220,
+      "estatus": "en_camino",
+      "fecha": "2026-05-06T20:05:00Z"
+    }
+  ],
+  "usuarios": {
+    "roles": [
+      {
+        "id": "admin",
+        "nombre": "Administrador",
+        "permisos": ["ver_dashboard", "editar_menu", "gestionar_usuarios"]
+      },
+      {
+        "id": "cocinero",
+        "nombre": "Cocinero",
+        "permisos": ["ver_pedidos", "actualizar_estatus_preparacion"]
+      },
+      {
+        "id": "repartidor",
+        "nombre": "Repartidor",
+        "permisos": ["ver_itinerario", "actualizar_estatus_entrega"]
+      },
+      {
+        "id": "cliente",
+        "nombre": "Cliente",
+        "permisos": ["ver_menu", "crear_pedido", "ver_mis_pedidos"]
+      }
+    ]
+  }
+}
