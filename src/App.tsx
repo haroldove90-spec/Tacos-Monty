@@ -26,7 +26,8 @@ import {
   Trash2,
   DollarSign,
   AlertTriangle,
-  LogOut
+  LogOut,
+  ToggleLeft
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { 
@@ -49,8 +50,10 @@ import rolesData from "./roles_config.json";
 const LOGO_URL = "https://cossma.com.mx/montytacos.jpeg";
 
 type Role = 'ADMIN' | 'COCINA' | 'REPARTIDOR' | 'CLIENTE';
-type AdminModule = 'ANALYTICS' | 'FINANCES' | 'INVENTORY' | 'STAFF' | 'MENU_EDITOR';
-type KitchenModule = 'KDS' | 'AVAILABILITY';
+type AdminModule = 'ANALYTICS' | 'FINANCES' | 'INVENTORY' | 'STAFF' | 'MENU_EDITOR' | 'REPARTIDORES';
+type KitchenModule = 'PEDIDOS';
+type ClientModule = 'MENU' | 'MIS_PEDIDOS' | 'MI_PERFIL';
+type DriverModule = 'PENDIENTES' | 'FINALIZADAS' | 'COMISIONES';
 
 export default function App() {
   const { menu, pedidos_activos } = data;
@@ -58,23 +61,64 @@ export default function App() {
   const [view, setView] = useState<'HOME' | 'DASHBOARD'>('HOME');
   const [currentRole, setCurrentRole] = useState<Role>('CLIENTE');
   const [adminModule, setAdminModule] = useState<AdminModule>('ANALYTICS');
-  const [kitchenModule, setKitchenModule] = useState<KitchenModule>('KDS');
+  const [kitchenModule, setKitchenModule] = useState<KitchenModule>('PEDIDOS');
+  const [clientModule, setClientModule] = useState<ClientModule>('MENU');
+  const [driverModule, setDriverModule] = useState<DriverModule>('PENDIENTES');
   const [showBanner, setShowBanner] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Kitchen State
-  const [kitchenOrders, setKitchenOrders] = useState([
-    { id: '101', items: [{ name: 'Tacos Discada', qty: 3, notes: 'Sin cebolla, mucha salsa' }, { name: 'Quesadilla Asada', qty: 1, notes: 'Harina' }], status: 'pending', time: '5 min' },
-    { id: '102', items: [{ name: 'Chicharrón San Juan', qty: 2, notes: 'Extra limón' }], status: 'preparing', time: '12 min' },
-    { id: '103', items: [{ name: 'Vapor Surtidos', qty: 5, notes: 'Solo chicharrón y papa' }], status: 'pending', time: '2 min' },
+  // Global Config
+  const [commissionRate, setCommissionRate] = useState(15); // Percentage
+
+  // Drivers State
+  const [drivers, setDrivers] = useState([
+    { id: 'R01', name: 'Alonso Valdes', status: 'active', commissions_day: 450, commissions_month: 3200 },
+    { id: 'R02', name: 'Beto Sanchez', status: 'active', commissions_day: 320, commissions_month: 2800 },
+    { id: 'R03', name: 'Carla Mendez', status: 'suspended', commissions_day: 0, commissions_month: 1500 },
+  ]);
+
+  // Client State
+  const [cart, setCart] = useState<{ id: number; nombre: string; precio: number; qty: number }[]>([]);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [clientOrders, setClientOrders] = useState([
+    { id: '100', date: '2025-05-06', total: 450, status: 'delivered', items: [{ name: 'Tacos Discada', qty: 5 }] }
+  ]);
+
+  const addToCart = (item: any) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === item.id);
+      if (existing) {
+        return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
+      }
+      return [...prev, { id: item.id, nombre: item.nombre, precio: item.precio, qty: 1 }];
+    });
+  };
+
+  const removeFromCart = (itemId: number) => {
+    setCart(prev => prev.filter(i => i.id !== itemId));
+  };
+
+  const cartTotal = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
+
+  // Unified Orders State (Monitor Global)
+  const [orders, setOrders] = useState([
+    { id: '101', client: 'Juan P.', items: [{ name: 'Tacos Discada', qty: 3, notes: 'Sin cebolla, mucha salsa' }, { name: 'Quesadilla Asada', qty: 1, notes: 'Harina' }], status: 'pending', time: '5 min', total: 240, driverId: null },
+    { id: '102', client: 'Maria L.', items: [{ name: 'Chicharrón San Juan', qty: 2, notes: 'Extra limón' }], status: 'preparing', time: '12 min', total: 180, driverId: null },
+    { id: '103', client: 'Carlos R.', items: [{ name: 'Vapor Surtidos', qty: 5, notes: 'Solo chicharrón y papa' }], status: 'ready', time: '2 min', total: 125, driverId: null },
+    { id: '104', client: 'Ana G.', items: [{ name: 'Tacos Asada', qty: 4, notes: '' }], status: 'on_way', time: '15 min', total: 220, driverId: 'R01' },
   ]);
 
   const [disponibilidadMenu, setDisponibilidadMenu] = useState(
     menu.map(item => ({ ...item, disponible: true }))
   );
 
-  const updateOrderStatus = (orderId: string, nextStatus: string) => {
-    setKitchenOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o));
+  const updateOrderStatus = (orderId: string, nextStatus: string, extraData = {}) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus, ...extraData } : o));
+    // If completed, add to client orders if it's the client's order (simulated)
+    if (nextStatus === 'delivered') {
+      const order = orders.find(o => o.id === orderId);
+      if (order) setClientOrders(prev => [...prev, { ...order, date: new Date().toISOString().split('T')[0] }]);
+    }
   };
 
   const toggleAvailability = (itemId: number) => {
@@ -121,10 +165,10 @@ export default function App() {
 
   const renderHome = () => {
     const roles = [
-      { id: 'CLIENTE', name: 'Cliente', icon: <Utensils size={40} />, color: 'bg-orange-500', shadow: 'shadow-orange-100', desc: 'Pedir tacos deliciosos' },
-      { id: 'COCINA', name: 'Cocina', icon: <ChefHat size={40} />, color: 'bg-amber-500', shadow: 'shadow-amber-100', desc: 'Gestionar pedidos' },
-      { id: 'REPARTIDOR', name: 'Repartidor', icon: <Truck size={40} />, color: 'bg-emerald-500', shadow: 'shadow-emerald-100', desc: 'Entregar a tiempo' },
-      { id: 'ADMIN', name: 'Admin', icon: <ShieldCheck size={40} />, color: 'bg-slate-900', shadow: 'shadow-slate-200', desc: 'Control total' },
+      { id: 'CLIENTE', name: 'Cliente', icon: <Utensils size={40} />, color: 'bg-[#DF8B42]', shadow: 'shadow-orange-100', desc: 'Pedir tacos deliciosos', textColor: 'text-white' },
+      { id: 'COCINA', name: 'Cocina', icon: <ChefHat size={40} />, color: 'bg-[#F5DD9F]', shadow: 'shadow-yellow-100', desc: 'Gestionar pedidos', textColor: 'text-[#8F2A1E]' },
+      { id: 'REPARTIDOR', name: 'Repartidor', icon: <Truck size={40} />, color: 'bg-[#3F3B78]', shadow: 'shadow-indigo-100', desc: 'Entregar a tiempo', textColor: 'text-white' },
+      { id: 'ADMIN', name: 'Admin', icon: <ShieldCheck size={40} />, color: 'bg-[#8F2A1E]', shadow: 'shadow-red-100', desc: 'Control total', textColor: 'text-white' },
     ];
 
     return (
@@ -152,10 +196,11 @@ export default function App() {
                 setCurrentRole(role.id as Role);
                 setView('DASHBOARD');
                 if (role.id === 'ADMIN') setAdminModule('ANALYTICS');
+                if (role.id === 'COCINA') setKitchenModule('KDS');
               }}
               className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:border-[#DF8B42]/30 transition-all group flex items-center gap-6 text-left relative overflow-hidden"
             >
-              <div className={`${role.color} p-4 rounded-2xl text-white shadow-xl ${role.shadow} group-hover:scale-110 transition-all duration-300`}>
+              <div className={`${role.color} p-4 rounded-2xl ${role.textColor} shadow-xl ${role.shadow} group-hover:scale-110 transition-all duration-300`}>
                 {role.id === 'ADMIN' ? <ShieldCheck size={28} /> : 
                  role.id === 'COCINA' ? <ChefHat size={28} /> : 
                  role.id === 'REPARTIDOR' ? <Truck size={28} /> : <Utensils size={28} />}
@@ -219,6 +264,12 @@ export default function App() {
                 <Package size={26} />
               </button>
               <button 
+                onClick={() => setAdminModule('REPARTIDORES')}
+                className={`p-4 rounded-2xl transition-all ${adminModule === 'REPARTIDORES' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+              >
+                <Truck size={26} />
+              </button>
+              <button 
                 onClick={() => setAdminModule('STAFF')}
                 className={`p-4 rounded-2xl transition-all ${adminModule === 'STAFF' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
               >
@@ -231,11 +282,56 @@ export default function App() {
                 <Edit3 size={26} />
               </button>
             </>
+          ) : currentRole === 'COCINA' ? (
+            <>
+              <button 
+                onClick={() => setKitchenModule('PEDIDOS')}
+                className={`p-4 rounded-2xl transition-all ${kitchenModule === 'PEDIDOS' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+              >
+                <ClipboardList size={26} />
+              </button>
+            </>
+          ) : currentRole === 'REPARTIDOR' ? (
+             <>
+               <button 
+                 onClick={() => setDriverModule('PENDIENTES')}
+                 className={`p-4 rounded-2xl transition-all ${driverModule === 'PENDIENTES' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+               >
+                 <Package size={26} />
+               </button>
+               <button 
+                 onClick={() => setDriverModule('FINALIZADAS')}
+                 className={`p-4 rounded-2xl transition-all ${driverModule === 'FINALIZADAS' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+               >
+                 <ClipboardList size={26} />
+               </button>
+               <button 
+                 onClick={() => setDriverModule('COMISIONES')}
+                 className={`p-4 rounded-2xl transition-all ${driverModule === 'COMISIONES' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+               >
+                 <DollarSign size={26} />
+               </button>
+             </>
           ) : (
             <>
-              {config.allowed_modules.includes('pedidos_kanban') || config.allowed_modules.includes('historial') ? (
-                <button className="p-4 text-white/40 hover:text-white hover:bg-white/10 transition-all rounded-2xl"><ClipboardList size={26} /></button>
-              ) : null}
+               <button 
+                 onClick={() => setClientModule('MENU')}
+                 className={`p-4 rounded-2xl transition-all ${clientModule === 'MENU' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+               >
+                 <Utensils size={26} />
+               </button>
+               <button 
+                 onClick={() => setClientModule('MIS_PEDIDOS')}
+                 className={`p-4 rounded-2xl transition-all ${clientModule === 'MIS_PEDIDOS' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+               >
+                 <ShoppingBag size={26} />
+               </button>
+               <button 
+                 onClick={() => setClientModule('MI_PERFIL')}
+                 className={`p-4 rounded-2xl transition-all ${clientModule === 'MI_PERFIL' ? 'text-[#8F2A1E] bg-[#F5DD9F] shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+               >
+                 <User size={26} />
+               </button>
             </>
           )}
           <button className="p-4 text-white/40 hover:text-white hover:bg-white/10 transition-all rounded-2xl"><Settings size={26} /></button>
@@ -267,7 +363,7 @@ export default function App() {
                <img src={LOGO_URL} alt="Logo" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-lg font-black tracking-tight text-white leading-none truncate max-w-[150px]">
-              {currentRole === 'CLIENTE' ? 'Menú' : (currentRole === 'ADMIN' ? adminModule.replace('_', ' ') : config.name)}
+              Monty Tacos
             </h1>
           </div>
           <button 
@@ -307,7 +403,9 @@ export default function App() {
                 </div>
 
                 <nav className="flex-1 space-y-2 overflow-y-auto">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Módulos Administrativos</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                    {currentRole === 'ADMIN' ? 'Módulos Administrativos' : currentRole === 'COCINA' ? 'Módulos de Cocina' : 'Opciones'}
+                  </p>
                   {currentRole === 'ADMIN' ? (
                     <>
                       {[
@@ -323,7 +421,26 @@ export default function App() {
                             setAdminModule(mod.id as AdminModule);
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${adminModule === mod.id ? 'bg-red-50 text-red-600 shadow-sm shadow-red-100' : 'text-slate-500 hover:bg-slate-50'}`}
+                          className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${adminModule === mod.id ? 'bg-[#8F2A1E] text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                          {mod.icon}
+                          {mod.label}
+                        </button>
+                      ))}
+                    </>
+                  ) : currentRole === 'COCINA' ? (
+                    <>
+                      {[
+                        { id: 'KDS', label: 'Monitor KDS', icon: <ClipboardList size={20} /> },
+                        { id: 'AVAILABILITY', label: 'Disponibilidad', icon: <ToggleLeft size={20} /> },
+                      ].map(mod => (
+                        <button
+                          key={mod.id}
+                          onClick={() => {
+                            setKitchenModule(mod.id as KitchenModule);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${kitchenModule === mod.id ? 'bg-[#8F2A1E] text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
                           {mod.icon}
                           {mod.label}
@@ -613,230 +730,511 @@ export default function App() {
     }
   };
 
-  const renderContent = () => {
-    if (currentRole === 'COCINA') {
-      return (
-        <div className="space-y-6 pt-4 px-4 sm:px-0">
-          <div className="flex bg-[#F5DD9F]/30 p-1.5 rounded-[1.2rem] gap-2 w-full max-w-md mx-auto sm:mx-0">
-            <button 
-              onClick={() => setKitchenModule('KDS')}
-              className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${kitchenModule === 'KDS' ? 'bg-[#3F3B78] text-white shadow-lg' : 'text-slate-500 hover:bg-white/50'}`}
-            >
-              Monitor KDS
-            </button>
-            <button 
-              onClick={() => setKitchenModule('AVAILABILITY')}
-              className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${kitchenModule === 'AVAILABILITY' ? 'bg-[#3F3B78] text-white shadow-lg' : 'text-slate-500 hover:bg-white/50'}`}
-            >
-              Disponibilidad
-            </button>
+  const renderOrderMonitor = () => {
+    return (
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mb-8">
+        <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+          <div>
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Monitor Global de Pedidos</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Estado en tiempo real • {orders.length} pedidos</p>
           </div>
-
-          {kitchenModule === 'KDS' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {['pending', 'preparing', 'ready'].map((status) => (
-                <div key={status} className="bg-slate-50/50 rounded-[2rem] p-4 border border-slate-100 flex flex-col gap-4">
-                  <div className="flex items-center justify-between px-2">
-                    <h3 className="font-black text-xs uppercase tracking-widest text-slate-400">
-                      {status === 'pending' ? 'Pendientes' : status === 'preparing' ? 'Preparando' : 'Listos'}
-                    </h3>
-                    <span className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-slate-400 border border-slate-100">
-                      {kitchenOrders.filter(o => o.status === status).length}
-                    </span>
+          <div className="flex gap-2">
+            {['pending', 'preparing', 'ready', 'on_way', 'delivered'].map((s) => (
+              <div key={s} className="flex flex-col items-center">
+                <div className={`w-3 h-3 rounded-full ${
+                  s === 'pending' ? 'bg-amber-400' : 
+                  s === 'preparing' ? 'bg-[#DF8B42]' : 
+                  s === 'ready' ? 'bg-emerald-500' : 
+                  s === 'on_way' ? 'bg-[#3F3B78]' : 'bg-slate-300'
+                }`} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 divide-x divide-slate-50">
+          {['pending', 'preparing', 'ready', 'on_way', 'delivered'].map((status) => (
+            <div key={status} className="p-4 space-y-4 min-h-[150px]">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center mb-4">
+                {status === 'pending' ? 'Pendientes' : status === 'preparing' ? 'Cocina' : status === 'ready' ? 'Listos' : status === 'on_way' ? 'Ruta' : 'Entregados'}
+              </p>
+              {orders.filter(o => o.status === status).map(order => (
+                <div key={order.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 relative group overflow-hidden">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-[10px] font-black text-slate-900">#{order.id}</span>
+                    <Clock size={10} className="text-slate-300" />
                   </div>
-                  
-                  <div className="space-y-4">
-                    {kitchenOrders.filter(o => o.status === status).map(order => (
-                      <motion.div 
-                        layoutId={order.id}
-                        key={order.id} 
-                        className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group"
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <span className="text-[#8F2A1E] font-black text-lg">#{order.id}</span>
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                            <Clock size={12} /> {order.time}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-3 mb-6">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="bg-slate-50/50 p-3 rounded-xl border border-slate-50">
-                              <div className="flex justify-between items-center mb-1">
-                                <p className="font-black text-slate-800 text-sm">{item.name}</p>
-                                <span className="bg-[#DF8B42] text-white text-[10px] font-black px-2 py-0.5 rounded-lg">x{item.qty}</span>
-                              </div>
-                              <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed">
-                                "{item.notes}"
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="flex gap-2">
-                          {status === 'pending' && (
-                            <button 
-                              onClick={() => updateOrderStatus(order.id, 'preparing')}
-                              className="w-full bg-[#DF8B42] text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg transition-all"
-                            >
-                              Preparar
-                            </button>
-                          )}
-                          {status === 'preparing' && (
-                            <button 
-                              onClick={() => updateOrderStatus(order.id, 'ready')}
-                              className="w-full bg-[#8F2A1E] text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg transition-all"
-                            >
-                              Listo
-                            </button>
-                          )}
-                          {status === 'ready' && (
-                            <button 
-                              onClick={() => updateOrderStatus(order.id, 'delivered')}
-                              className="w-full bg-[#3F3B78] text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg transition-all"
-                            >
-                              Entregado
-                            </button>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
+                  <p className="text-[10px] font-bold text-slate-500 truncate">{order.client}</p>
+                  <div className="mt-2 flex justify-between items-center">
+                    <span className="text-[9px] font-black text-[#8F2A1E]">${order.total}</span>
+                    {status === 'on_way' && <Truck size={12} className="text-[#3F3B78]" />}
                   </div>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-8 border-b border-slate-50 bg-slate-50/50">
-                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Switch de Disponibilidad</h2>
-                 <p className="text-sm text-slate-400 font-medium">Controla los productos visibles para los clientes en tiempo real.</p>
-              </div>
-              <div className="divide-y divide-slate-50">
-                {disponibilidadMenu.map(item => (
-                  <div key={item.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${item.disponible ? 'bg-[#F5DD9F]/20 text-[#DF8B42]' : 'bg-slate-100 text-slate-300'}`}>
-                        <Utensils size={28} />
-                      </div>
-                      <div>
-                        <h4 className={`font-black text-lg tracking-tight ${item.disponible ? 'text-slate-900' : 'text-slate-300 line-through'}`}>{item.nombre}</h4>
-                        <p className={`text-[10px] font-bold uppercase tracking-widest ${item.disponible ? 'text-[#8F2A1E]' : 'text-slate-300'}`}>
-                          {item.disponible ? 'Disponible' : 'Agotado'}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => toggleAvailability(item.id)}
-                      className={`relative w-16 h-8 rounded-full transition-all duration-300 ${item.disponible ? 'bg-[#8F2A1E]' : 'bg-slate-200'}`}
-                    >
-                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 shadow-lg ${item.disponible ? 'left-9' : 'left-1'}`}></div>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          ))}
         </div>
-      );
-    }
-    switch (currentRole) {
-      case 'ADMIN':
-        return renderAdminContent();
+      </div>
+    );
+  };
 
-      case 'COCINA':
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold tracking-tight uppercase">Dashboard Cocina</h2>
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> ONLINE
+  const renderAdminRepartidores = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Gestión de Repartidores</h2>
+            <p className="text-slate-400 font-medium">Administra tu flota de entrega y comisiones.</p>
+          </div>
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 flex items-center gap-3">
+              <span className="text-[10px] font-black text-slate-400 uppercase">Comisión:</span>
+              <input 
+                type="number" 
+                value={commissionRate} 
+                onChange={(e) => setCommissionRate(Number(e.target.value))}
+                className="w-12 text-sm font-black text-[#8F2A1E] focus:outline-none"
+              />
+              <span className="text-[10px] font-black text-slate-400">%</span>
+            </div>
+            <button className="flex-1 md:flex-none bg-[#3F3B78] text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all">
+              Dar de Alta
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {drivers.map(driver => (
+            <div key={driver.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${driver.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
+                  <Truck size={24} />
+                </div>
+                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${driver.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                  {driver.status === 'active' ? 'Activo' : 'Suspendido'}
+                </span>
+              </div>
+              <h4 className="text-lg font-black text-slate-900 tracking-tight">{driver.name}</h4>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">ID: {driver.id}</p>
+              
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Día</p>
+                  <p className="text-sm font-black text-emerald-600">${driver.commissions_day}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Mes</p>
+                  <p className="text-sm font-black text-[#8F2A1E]">${driver.commissions_month}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button className="flex-1 py-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-100 transition-all font-black text-[9px] uppercase tracking-widest">Editar</button>
+                <button className="flex-1 py-3 bg-rose-50 text-rose-400 rounded-xl hover:bg-rose-100 transition-all font-black text-[9px] uppercase tracking-widest">Baja</button>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {pedidos_activos.map(pedido => (
-                <div key={pedido.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                  <div className="flex justify-between mb-4">
-                    <span className="text-xs font-bold text-slate-400">{pedido.id}</span>
-                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-lg ${pedido.estatus === 'pendiente' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {pedido.estatus}
-                    </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderKitchenOrders = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Módulo de Pedidos</h2>
+            <p className="text-slate-400 font-medium">Control de comandas y estados de cocina.</p>
+          </div>
+          <span className="bg-[#8F2A1E] text-white px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg">
+            {orders.filter(o => o.status === 'pending' || o.status === 'preparing').length} ACTIVOS
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
+            <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-6 pb-2 border-b border-slate-50">Comandas Pendientes</h3>
+            <div className="space-y-4">
+              {orders.filter(o => o.status === 'pending').map(order => (
+                <div key={order.id} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <p className="text-2xl font-black text-[#8F2A1E]">#{order.id}</p>
+                      <p className="text-xs font-bold text-slate-400">Cliente: {order.client}</p>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                      <Clock size={14} className="text-amber-500" />
+                      <span className="font-black text-[10px] text-slate-600 uppercase tracking-widest">{order.time}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3 mb-6">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
+                        <div className="flex justify-between items-center">
+                          <p className="font-black text-slate-800">{item.name}</p>
+                          <span className="bg-[#DF8B42] text-white text-xs font-black px-2.5 py-1 rounded-lg">x{item.qty}</span>
+                        </div>
+                        {item.notes && <p className="mt-2 text-[10px] text-red-500 font-bold italic">"{item.notes}"</p>}
+                      </div>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => updateOrderStatus(order.id, 'preparing')}
+                    className="w-full bg-[#DF8B42] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-orange-100 hover:scale-105 transition-all"
+                  >
+                    Iniciar Preparación
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
+            <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-6 pb-2 border-b border-slate-50">En Preparación</h3>
+            <div className="space-y-4">
+              {orders.filter(o => o.status === 'preparing').map(order => (
+                <div key={order.id} className="bg-[#F5DD9F]/20 p-6 rounded-[2rem] border border-[#F5DD9F]/30">
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="text-xl font-black text-slate-900 tracking-tight italic select-none opacity-50">COCINANDO...</span>
+                    <ChefHat size={32} className="text-[#DF8B42] animate-bounce" />
                   </div>
                   <div className="space-y-2 mb-6">
-                    {pedido.items.map((item, i) => (
-                      <p key={i} className="font-bold text-lg">{item.cantidad}x {item.producto}</p>
+                    {order.items.map((item, idx) => (
+                      <p key={idx} className="font-bold text-slate-800 text-sm">{item.qty}x {item.name}</p>
                     ))}
                   </div>
-                  <button className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl active:scale-95 transition-all">
-                    COMENZAR PREPARACIÓN
+                  <button 
+                    onClick={() => updateOrderStatus(order.id, 'ready')}
+                    className="w-full bg-[#3F3B78] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-100 hover:scale-105 transition-all"
+                  >
+                    Marcar como Listo
                   </button>
                 </div>
               ))}
             </div>
           </div>
-        );
+        </div>
+      </div>
+    );
+  };
 
-      case 'REPARTIDOR':
+  const renderCourierView = () => {
+    switch (driverModule) {
+      case 'PENDIENTES':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
-              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
-                <Truck size={40} />
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Entregas Pendientes</h2>
+                <p className="text-slate-400 font-medium">Recoge y entrega los pedidos listos.</p>
               </div>
-              <h2 className="text-2xl font-black">LOGÍSTICA DE REPARTO</h2>
-              <p className="text-slate-400 text-sm">3 pedidos asignados para entrega</p>
             </div>
-            <div className="space-y-4">
-              {pedidos_activos.filter(p => p.estatus === 'en_camino').map(pedido => (
-                <div key={pedido.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400"><MapPin /></div>
-                    <div>
-                      <p className="font-bold">{pedido.cliente}</p>
-                      <p className="text-xs text-slate-400">Tlalnepantla Centro</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Ready to pick up */}
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-6">Listos para Recoger</h3>
+                <div className="space-y-4">
+                  {orders.filter(o => o.status === 'ready').map(order => (
+                    <div key={order.id} className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="text-xl font-black text-emerald-700">#{order.id}</span>
+                        <div className="bg-white px-2 py-1 rounded-lg shadow-sm font-black text-[#8F2A1E] text-xs">${order.total}</div>
+                      </div>
+                      <p className="text-sm font-bold text-slate-600 mb-6"><MapPin size={14} className="inline mr-1" /> Sucursal Centro → Entrega Domicilio</p>
+                      <button 
+                        onClick={() => updateOrderStatus(order.id, 'on_way', { driverId: 'R01' })}
+                        className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transition-all"
+                      >
+                        Recoger Pedido
+                      </button>
                     </div>
-                  </div>
-                  <button className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest">
-                    ENTREGAR
-                  </button>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* In transit */}
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-6">En Camino</h3>
+                <div className="space-y-4">
+                  {orders.filter(o => o.status === 'on_way' && o.driverId === 'R01').map(order => (
+                    <div key={order.id} className="p-6 bg-[#3F3B78]/5 rounded-3xl border border-[#3F3B78]/10">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-xl font-black text-[#3F3B78]">#{order.id}</span>
+                        <Truck size={24} className="text-[#3F3B78]" />
+                      </div>
+                      <div className="space-y-1 mb-6">
+                         <p className="font-bold text-slate-900">{order.client}</p>
+                         <p className="text-xs text-slate-400">Ver ubicación en mapa →</p>
+                      </div>
+                      <button 
+                        onClick={() => updateOrderStatus(order.id, 'delivered')}
+                        className="w-full bg-[#3F3B78] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:shadow-xl transition-all"
+                      >
+                        Finalizar Entrega
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         );
-
-      default:
+      case 'FINALIZADAS':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold tracking-tight uppercase text-slate-900 leading-none">TU PEDIDO</h2>
-                <button className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg shadow-red-100 transition-all active:scale-95 uppercase tracking-wide">
-                  <ShoppingBag size={14} /> HACER PEDIDO
-                </button>
-              </div>
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <h2 className="text-2xl font-black uppercase tracking-tight mb-8">Historial de Entregas</h2>
+             <div className="divide-y divide-slate-50">
+               {orders.filter(o => o.status === 'delivered' && o.driverId === 'R01').map(order => (
+                 <div key={order.id} className="py-6 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300"><CheckCircle2 size={24} /></div>
+                      <div>
+                        <p className="font-black text-slate-900">Pedido #{order.id}</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hoy • {order.client}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-black text-emerald-600 uppercase">Comisión</p>
+                      <p className="text-lg font-black text-slate-900">${(order.total * commissionRate / 100).toFixed(2)}</p>
+                    </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+        );
+      case 'COMISIONES':
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-[#F5DD9F] p-8 rounded-[2.5rem] border border-[#F5DD9F]/30 shadow-xl shadow-yellow-100/20">
+                   <p className="text-[10px] font-black text-[#8F2A1E] uppercase tracking-[0.2em] mb-2">Ganancia del Día</p>
+                   <p className="text-4xl font-black text-[#8F2A1E]">$450.00</p>
+                   <p className="mt-4 text-xs font-bold text-[#8F2A1E]/60 italic">Comisiones pendientes de retiro: $120.00</p>
+                </div>
+                <div className="bg-[#8F2A1E] p-8 rounded-[2.5rem] text-white">
+                   <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-2">Ganancia del Mes</p>
+                   <p className="text-4xl font-black">$3,200.00</p>
+                   <div className="mt-6 flex gap-2">
+                      <span className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-black uppercase">Metas del Mes: 85%</span>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+      default: return null;
+    }
+  }
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {menu.map((item, idx) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group cursor-pointer text-center flex flex-col items-center"
+  const renderClientProfile = () => {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm text-center">
+          <div className="w-24 h-24 bg-[#F5DD9F] rounded-full mx-auto mb-6 flex items-center justify-center text-[#8F2A1E] shadow-xl border-4 border-white">
+            <User size={48} />
+          </div>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">Juan Invitado</h3>
+          <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Taco Lover • Nivel Oro</p>
+          
+          <div className="grid grid-cols-2 gap-4 mt-12 text-left">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+               <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Pedidos Totales</p>
+               <p className="font-black text-lg text-slate-900">{clientOrders.length}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+               <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Taco Puntos</p>
+               <p className="font-black text-lg text-[#DF8B42]">1,250 PTS</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderClientPedidos = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Mis Pedidos</h2>
+        <div className="space-y-4">
+          {clientOrders.map(order => (
+            <div key={order.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[#8F2A1E]"><Package size={32} /></div>
+                <div>
+                  <p className="text-sm font-black text-slate-500 uppercase tracking-widest leading-none mb-1">#{order.id}</p>
+                  <p className="font-black text-lg text-slate-900">{order.date}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-8">
+                 <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total</p>
+                    <p className="font-black text-xl text-[#8F2A1E]">${order.total}</p>
+                 </div>
+                 <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                   {order.status === 'delivered' ? 'Entregado' : 'Procesando'}
+                 </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (currentRole) {
+      case 'ADMIN':
+        return (
+          <div className="pt-4 px-4 sm:px-0">
+             {renderOrderMonitor()}
+             {adminModule === 'REPARTIDORES' ? renderAdminRepartidores() : renderAdminContent()}
+          </div>
+        );
+      case 'REPARTIDOR':
+        return (
+          <div className="space-y-8 pt-4 px-4 sm:px-0">
+             {renderOrderMonitor()}
+             {renderCourierView()}
+          </div>
+        );
+      case 'COCINA':
+        return (
+          <div className="space-y-8 pt-4 px-4 sm:px-0">
+            {renderOrderMonitor()}
+            {renderKitchenOrders()}
+          </div>
+        );
+      case 'CLIENTE':
+        if (clientModule === 'MENU') {
+          return (
+            <div className="space-y-8 pt-4 px-4 sm:px-0">
+              {renderOrderMonitor()}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Menú Digital</h2>
+                  <p className="text-slate-400 font-medium">Selecciona tus favoritos y arma tu orden.</p>
+                </div>
+                {cart.length > 0 && (
+                  <button 
+                    onClick={() => setIsCheckoutOpen(true)}
+                    className="bg-[#3F3B78] text-white px-6 py-3 rounded-2xl flex items-center gap-3 shadow-xl hover:scale-105 transition-all animate-in zoom-in"
                   >
-                    <div className="w-24 h-24 mb-6 bg-slate-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Utensils className="text-orange-500 w-12 h-12" />
+                    <ShoppingBag size={20} />
+                    <span className="font-black uppercase tracking-widest text-xs">Ver Carrito ({cart.length})</span>
+                    <span className="bg-white/20 px-2 py-1 rounded-lg font-bold">${cartTotal}</span>
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4 sm:gap-6">
+                {disponibilidadMenu.map(item => (
+                  <motion.div 
+                    key={item.id}
+                    whileHover={{ y: -5 }}
+                    className={`bg-white rounded-[2rem] border border-slate-100 p-4 shadow-sm hover:shadow-xl transition-all flex flex-col relative group ${!item.disponible ? 'opacity-50 grayscale pointer-events-none' : ''}`}
+                  >
+                    {!item.disponible && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/5 rounded-[2rem]">
+                        <span className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg">Agotado</span>
+                      </div>
+                    )}
+                    <div className="aspect-square bg-slate-50 rounded-2xl mb-4 flex items-center justify-center text-[#DF8B42] group-hover:bg-[#F5DD9F]/20 transition-colors">
+                      <Utensils size={40} />
                     </div>
-                    <div className="flex-1 mb-4">
-                      <h3 className="font-bold text-md leading-tight mb-2 min-h-[2.5rem] flex items-center justify-center">
-                        {item.nombre}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium">${item.precio.toFixed(2)}</p>
+                    <div className="flex-1">
+                      <h4 className="font-black text-slate-900 leading-tight mb-1">{item.nombre}</h4>
+                      <p className="text-[#8F2A1E] font-black text-lg">${item.precio}</p>
                     </div>
+                    <button 
+                      onClick={() => addToCart(item)}
+                      disabled={!item.disponible}
+                      className="mt-4 w-full bg-[#DF8B42] text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Plus size={14} /> Agregar
+                    </button>
                   </motion.div>
                 ))}
               </div>
-          </div>
-        );
+
+              {isCheckoutOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={() => setIsCheckoutOpen(false)}
+                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                  />
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-70 overflow-hidden"
+                  >
+                    <div className="bg-[#8F2A1E] p-8 text-white">
+                      <h3 className="text-2xl font-black uppercase tracking-tight">Tu Pedido</h3>
+                      <p className="opacity-70 text-sm">Monty Tacos - Sucursal Centro</p>
+                    </div>
+                    
+                    <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto">
+                      {cart.map(item => (
+                        <div key={item.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                          <div>
+                            <p className="font-black text-slate-900">{item.nombre}</p>
+                            <p className="text-xs text-slate-400 font-bold">Cantidad: {item.qty} x ${item.precio}</p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="font-black text-[#8F2A1E]">${item.precio * item.qty}</span>
+                            <button 
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-slate-300 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Subtotal</span>
+                          <span className="font-bold text-slate-900">${cartTotal}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-6">
+                          <span className="text-slate-900 font-black text-xl uppercase tracking-tight">Total</span>
+                          <span className="text-[#8F2A1E] font-black text-3xl">${cartTotal}</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          const newOrder = {
+                            id: (Math.floor(Math.random() * 900) + 100).toString(),
+                            client: 'Juan Invitado',
+                            items: cart.map(i => ({ name: i.nombre, qty: i.qty })),
+                            status: 'pending',
+                            time: 'Justo ahora',
+                            total: cartTotal,
+                            driverId: null
+                          };
+                          setOrders(prev => [newOrder as any, ...prev]);
+                          setCart([]);
+                          setIsCheckoutOpen(false);
+                          setClientModule('MIS_PEDIDOS');
+                        }}
+                        className="w-full bg-[#DF8B42] text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-orange-100 hover:scale-[1.02] active:scale-95 transition-all"
+                      >
+                        Confirmar Compra
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </div>
+          );
+        }
+        if (clientModule === 'MIS_PEDIDOS') return <div className="pt-4 px-4 sm:px-0 text-left">{renderClientPedidos()}</div>;
+        if (clientModule === 'MI_PERFIL') return <div className="pt-4 px-4 sm:px-0">{renderClientProfile()}</div>;
+        return null;
+      default:
+        return null;
     }
   };
 
@@ -871,7 +1269,7 @@ export default function App() {
               <div className="h-8 w-px bg-slate-200 mx-2"></div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-slate-900 leading-none">
-                  {currentRole === 'CLIENTE' ? 'Menú Principal' : (currentRole === 'ADMIN' ? adminModule.replace('_', ' ') : config.name)}
+                  Monty Tacos
                 </h1>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">SISTEMA • {currentRole}</p>
               </div>
@@ -910,7 +1308,7 @@ export default function App() {
                   { id: 'ANALYTICS', icon: <TrendingUp size={20} /> },
                   { id: 'FINANCES', icon: <DollarSign size={20} /> },
                   { id: 'INVENTORY', icon: <Package size={20} /> },
-                  { id: 'STAFF', icon: <Users size={20} /> },
+                  { id: 'REPARTIDORES', icon: <Truck size={20} /> },
                 ].map((mod) => (
                   <button
                     key={mod.id}
@@ -925,13 +1323,64 @@ export default function App() {
                   </button>
                 ))}
               </>
+            ) : currentRole === 'COCINA' ? (
+              <>
+                {[
+                  { id: 'PEDIDOS', icon: <ClipboardList size={20} />, label: 'Pedidos' },
+                ].map((mod) => (
+                  <button
+                    key={mod.id}
+                    onClick={() => setKitchenModule(mod.id as KitchenModule)}
+                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
+                      kitchenModule === mod.id 
+                        ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
+                        : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    {mod.icon}
+                  </button>
+                ))}
+              </>
+            ) : currentRole === 'REPARTIDOR' ? (
+              <>
+                {[
+                  { id: 'PENDIENTES', icon: <Package size={20} />, label: 'Entregas' },
+                  { id: 'FINALIZADAS', icon: <ClipboardList size={20} />, label: 'Historial' },
+                  { id: 'COMISIONES', icon: <DollarSign size={20} />, label: 'Dinero' },
+                ].map((mod) => (
+                  <button
+                    key={mod.id}
+                    onClick={() => setDriverModule(mod.id as DriverModule)}
+                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
+                      driverModule === mod.id 
+                        ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
+                        : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    {mod.icon}
+                  </button>
+                ))}
+              </>
             ) : (
-              <div className="flex items-center gap-3 pl-2">
-                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden shrink-0" onClick={() => setView('HOME')}>
-                    <img src={LOGO_URL} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                 </div>
-                 <span className="text-[10px] font-black text-white uppercase tracking-widest">{currentRole}</span>
-              </div>
+              <>
+                {[
+                  { id: 'MENU', icon: <Utensils size={20} />, label: 'Menú' },
+                  { id: 'MIS_PEDIDOS', icon: <ShoppingBag size={20} />, label: 'Pedidos' },
+                  { id: 'MI_PERFIL', icon: <User size={20} />, label: 'Perfil' },
+                ].map((mod) => (
+                  <button
+                    key={mod.id}
+                    onClick={() => setClientModule(mod.id as ClientModule)}
+                    className={`flex flex-1 items-center justify-center p-2.5 rounded-xl transition-all ${
+                      clientModule === mod.id 
+                        ? 'bg-[#F5DD9F] text-[#8F2A1E] shadow-lg scale-110 -translate-y-1' 
+                        : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    {mod.icon}
+                  </button>
+                ))}
+              </>
             )}
           </div>
 
