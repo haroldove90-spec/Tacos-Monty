@@ -731,47 +731,153 @@ export default function App() {
   };
 
   const renderOrderMonitor = () => {
+    const statusConfig = {
+      pending: { label: '¡Nuevo Pedido!', sub: 'Tu pedido ha sido recibido 🌮', color: 'bg-amber-400', icon: <Bell className="animate-bounce" />, text: 'text-amber-600', glow: 'shadow-amber-200' },
+      preparing: { label: 'En Preparación', sub: 'Tu pedido está en preparación 🔥', color: 'bg-[#DF8B42]', icon: <ChefHat className="animate-pulse" />, text: 'text-[#DF8B42]', glow: 'shadow-orange-200' },
+      ready: { label: 'Listo para Entrega', sub: 'Tu pedido está listo para entrega ✅', color: 'bg-emerald-500', icon: <Package className="scale-110" />, text: 'text-emerald-600', glow: 'shadow-emerald-200' },
+      on_way: { label: 'En Camino', sub: 'Tu pedido está en camino 🛵', color: 'bg-[#3F3B78]', icon: <Truck className="translate-x-1 animate-pulse" />, text: 'text-[#3F3B78]', glow: 'shadow-indigo-200' },
+      delivered: { label: 'Entregado', sub: 'Tu pedido ha llegado 🎉', color: 'bg-slate-800', icon: <CheckCircle2 />, text: 'text-slate-900', glow: 'shadow-slate-200' },
+    };
+
     return (
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mb-8">
-        <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-          <div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Monitor Global de Pedidos</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Estado en tiempo real • {orders.length} pedidos</p>
+      <div className="bg-white rounded-[4rem] border-4 border-[#F5DD9F]/30 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.12)] overflow-hidden mb-16 animate-in fade-in zoom-in-95 duration-1000">
+        <div className="bg-[#8F2A1E] p-10 text-white flex flex-col md:flex-row justify-between items-center gap-8 border-b border-white/10 relative overflow-hidden">
+          {/* Animated Background Element */}
+          <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 to-transparent blur-3xl opacity-20"></div>
           </div>
-          <div className="flex gap-2">
-            {['pending', 'preparing', 'ready', 'on_way', 'delivered'].map((s) => (
-              <div key={s} className="flex flex-col items-center">
-                <div className={`w-3 h-3 rounded-full ${
-                  s === 'pending' ? 'bg-amber-400' : 
-                  s === 'preparing' ? 'bg-[#DF8B42]' : 
-                  s === 'ready' ? 'bg-emerald-500' : 
-                  s === 'on_way' ? 'bg-[#3F3B78]' : 'bg-slate-300'
-                }`} />
-              </div>
-            ))}
+
+          <div className="flex items-center gap-8 relative z-10">
+             <motion.div 
+               animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
+               transition={{ duration: 4, repeat: Infinity }}
+               className="w-24 h-24 bg-gradient-to-br from-white to-slate-50 rounded-[2.5rem] flex items-center justify-center text-[#8F2A1E] shadow-[0_20px_40px_-10px_rgba(255,255,255,0.5)] border-4 border-white"
+             >
+                <ShoppingBag size={44} className="drop-shadow-lg" />
+             </motion.div>
+             <div>
+                <h3 className="text-4xl font-black uppercase tracking-tighter italic leading-none mb-2 bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">Monitor Monty Tacos</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                  </div>
+                  <p className="text-[12px] font-black opacity-80 uppercase tracking-[0.5em] text-amber-100">Transmisión en Tiempo Real</p>
+                </div>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-6 relative z-10 bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] border border-white/20 shadow-2xl">
+             <div className="flex -space-x-4">
+                {orders.slice(0, 4).map((o, i) => (
+                   <motion.div 
+                    key={o.id} 
+                    whileHover={{ scale: 1.2, zIndex: 50, rotate: i % 2 === 0 ? 5 : -5 }}
+                    className="w-12 h-12 rounded-full bg-white border-2 border-[#8F2A1E] flex items-center justify-center text-xs font-black text-[#8F2A1E] shadow-2xl cursor-help"
+                   >
+                      #{o.id.slice(-2)}
+                   </motion.div>
+                ))}
+                {orders.length > 4 && (
+                  <div className="w-12 h-12 rounded-full bg-[#F5DD9F] border-2 border-[#8F2A1E] flex items-center justify-center text-xs font-black text-[#8F2A1E] shadow-2xl">
+                    +{orders.length - 4}
+                  </div>
+                )}
+             </div>
+             <div className="h-10 w-[1px] bg-white/20"></div>
+             <div className="text-right">
+                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-0.5">Órdenes</p>
+                <p className="text-2xl font-black">{orders.length}</p>
+             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 divide-x divide-slate-50">
-          {['pending', 'preparing', 'ready', 'on_way', 'delivered'].map((status) => (
-            <div key={status} className="p-4 space-y-4 min-h-[150px]">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center mb-4">
-                {status === 'pending' ? 'Pendientes' : status === 'preparing' ? 'Cocina' : status === 'ready' ? 'Listos' : status === 'on_way' ? 'Ruta' : 'Entregados'}
-              </p>
-              {orders.filter(o => o.status === status).map(order => (
-                <div key={order.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 relative group overflow-hidden">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-[10px] font-black text-slate-900">#{order.id}</span>
-                    <Clock size={10} className="text-slate-300" />
-                  </div>
-                  <p className="text-[10px] font-bold text-slate-500 truncate">{order.client}</p>
-                  <div className="mt-2 flex justify-between items-center">
-                    <span className="text-[9px] font-black text-[#8F2A1E]">${order.total}</span>
-                    {status === 'on_way' && <Truck size={12} className="text-[#3F3B78]" />}
-                  </div>
+
+        <div className="p-10 lg:p-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
+          {(Object.keys(statusConfig) as Array<keyof typeof statusConfig>).map((status) => {
+            const config = statusConfig[status];
+            const filteredOrders = orders.filter(o => o.status === status);
+            const isActive = filteredOrders.length > 0;
+            
+            return (
+              <div 
+                key={status} 
+                className={`flex flex-col items-center text-center p-10 rounded-[4rem] transition-all duration-700 relative group
+                  ${isActive 
+                    ? `bg-slate-50 border-2 border-[#F5DD9F] shadow-2xl ${config.glow}` 
+                    : 'bg-white border-2 border-slate-50 opacity-15 hover:opacity-30 grayscale'
+                  }`}
+              >
+                <div className={`w-24 h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl mb-8 relative z-10 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6
+                  ${config.color} ${isActive ? 'animate-in zoom-in duration-700' : ''}`}
+                >
+                   {config.icon}
+                   {isActive && (
+                     <motion.div 
+                       initial={{ scale: 0 }}
+                       animate={{ scale: 1 }}
+                       className="absolute -top-3 -right-3 w-10 h-10 bg-white text-[#8F2A1E] rounded-2xl flex items-center justify-center text-sm font-black shadow-2xl border-4 border-slate-50 rotate-12"
+                     >
+                        {filteredOrders.length}
+                     </motion.div>
+                   )}
                 </div>
-              ))}
-            </div>
-          ))}
+                
+                <h4 className={`text-base font-black uppercase tracking-tight leading-none mb-3 ${config.text}`}>
+                  {config.label}
+                </h4>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed min-h-[30px]">
+                  {config.sub}
+                </p>
+                
+                <div className="mt-10 w-full space-y-4">
+                  <AnimatePresence mode="popLayout">
+                    {filteredOrders.map(order => (
+                      <motion.div 
+                        layout
+                        initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.8, opacity: 0, transition: { duration: 0.3 } }}
+                        key={order.id}
+                        className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-xl flex flex-col items-center gap-2 relative overflow-hidden group/card hover:border-[#DF8B42] hover:shadow-orange-100/50 transition-all"
+                      >
+                        <div className="w-full flex justify-between items-center mb-2">
+                          <span className="text-xs font-black text-slate-900 bg-slate-50 px-3 py-1 rounded-full">#{order.id}</span>
+                          <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 group-hover/card:text-[#DF8B42] transition-colors">
+                            <Clock size={12} className="opacity-50" />
+                            <span>{order.time}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs font-black text-[#8F2A1E] uppercase tracking-widest truncate w-full text-center px-2">{order.client}</p>
+                        
+                        {status === 'preparing' && (
+                          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-orange-400 to-transparent bg-[length:200%_100%] animate-gradient-x"></div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  
+                  {filteredOrders.length === 0 && (
+                    <div className="py-10 border-4 border-slate-50 border-dashed rounded-[3rem] flex flex-col items-center justify-center gap-3 opacity-40">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-200">
+                        <ShoppingBag size={20} />
+                      </div>
+                      <span className="italic text-slate-300 text-[10px] font-black uppercase tracking-widest leading-none">Esperando</span>
+                    </div>
+                  )}
+                </div>
+
+                {isActive && (
+                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white px-6 py-2.5 rounded-full shadow-[0_15px_30px_-10px_rgba(0,0,0,0.2)] border border-slate-100 flex items-center gap-3 animate-bounce">
+                    <div className="relative">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                      <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+                    </div>
+                    <span className="text-[9px] font-black uppercase text-slate-900 tracking-[0.2em] whitespace-nowrap">Actualizado Live</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
